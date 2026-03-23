@@ -1,0 +1,48 @@
+spring:
+  application:
+    name: tlias-web-management
+  # 配置数据库的连接信息
+  datasource:
+    url: jdbc:mysql://localhost:3306/tlias?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: 123456
+  servlet:
+    multipart:
+        max-file-size: 10MB
+        max-request-size: 10MB
+        enabled: true
+
+# mybatis配置信息
+mybatis-plus:
+  configuration:
+    # 1. 控制台打印SQL
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    # 2. 开启下划线转驼峰
+    map-underscore-to-camel-case: true
+    # 开启SQL参数打印
+    log-parameters: true
+  # 3. 指定Mapper XML文件路径
+  mapper-locations: classpath:mapper/*.xml
+  # 4. 补指定实体类包路径
+  type-aliases-package: com.kaduox.pojo
+
+#配置日志信息，查看spring事务管理的底层日志
+logging:
+    level:
+        org.springframework.jdbc.support.JdbcTransactionManager: debug
+
+#阿里云oss
+aliyun:
+  oss:
+    endpoint: https://oss-cn-beijing.aliyuncs.com
+    bucketName: kaduox-java-ai
+    region: cn-beijing
+
+pagehelper:
+  # 指定方言
+  helper-dialect: mysql
+  # 开启后，PageHelper 会自动检测数据库方言
+  auto-dialect: true
+  # 如果开启(true)，pageNum<=0 时会查询第一页，pageNum>pages(总页数)时会查询最后一页
+  reasonable: true

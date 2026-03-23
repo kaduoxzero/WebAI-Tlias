@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kaduox.mapper.ClazzMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="clazzResultMap" type="com.kaduox.pojo.Clazz">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="room" property="room"/>
+        <result column="begin_date" property="beginDate"/>
+        <result column="end_date" property="endDate"/>
+        <result column="master_id" property="masterId"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="master_name" property="masterName"/>
+        <result column="status" property="status"/>
+        <result column="subject" property="subject"/>
+    </resultMap>
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO clazz (name,room,begin_date,end_date,master_id,create_time,update_time,master_name,status,subject)
+        VALUES (#{name},#{room},#{beginDate},#{endDate},#{masterId},#{createTime},#{updateTime},#{masterName},#{status},
+        CASE #{subject}
+        WHEN '1' THEN 'Java'
+        WHEN '2' THEN '前端'
+        WHEN '3' THEN '大数据'
+        WHEN '4' THEN 'Python'
+        WHEN '5' THEN 'GO'
+        WHEN '6' THEN '嵌入式'
+        ELSE #{subject}
+        END)
+    </insert>
+    <update id="update">
+        UPDATE clazz
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="room != null">room = #{room},</if>
+            <if test="beginDate != null">begin_date = #{beginDate},</if>
+            <if test="endDate != null">end_date = #{endDate},</if>
+            <if test="masterId != null">master_id = #{masterId},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="subject != null">
+                subject = CASE #{subject}
+                WHEN '1' THEN 'Java'
+                WHEN '2' THEN '前端'
+                WHEN '3' THEN '大数据'
+                WHEN '4' THEN 'Python'
+                WHEN '5' THEN 'GO'
+                WHEN '6' THEN '嵌入式'
+                ELSE #{subject}
+                END,
+            </if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+
+    <select id="list" resultMap="clazzResultMap">
+        SELECT
+        c.id, c.name, c.room, c.begin_date, c.end_date, c.master_id,
+        c.create_time, c.update_time, e.name AS master_name,
+        <!-- 直接返回中文字符串 -->
+        CASE
+        WHEN CURDATE() &lt; c.begin_date THEN '未开班'
+        WHEN CURDATE() BETWEEN c.begin_date AND c.end_date THEN '已开班'
+        WHEN CURDATE() > c.end_date THEN '已结课'
+        ELSE '未开班'
+        END AS status,
+        c.subject
+        FROM clazz c
+        LEFT JOIN emp e ON c.master_id = e.id
+        <where>
+            <if test="name != null and name != ''">
+                AND c.name LIKE CONCAT('%', #{name}, '%')
+            </if>
+            <if test="begin != null and end != null">
+                AND c.begin_date BETWEEN #{begin} AND #{end}
+            </if>
+        </where>
+        ORDER BY c.create_time DESC
+    </select>
+
+    <delete id="deleteByIds">
+        DELETE FROM clazz WHERE id IN
+        <foreach  collection="ids" item="id" separator="," open="(" close=")" index="">
+            #{id}
+        </foreach>
+    </delete>
+
+    <select id="getById" resultMap="clazzResultMap">
+        SELECT
+        id,
+        name,
+        room,
+        begin_date,
+        end_date,
+        master_id,
+        create_time,
+        update_time,
+        master_name,
+        status,
+        subject
+        FROM clazz
+        WHERE id = #{id}
+    </select>
+    <select id="clazzList" resultMap="clazzResultMap" >
+        SELECT
+        id,
+        name,
+        room,
+        begin_date,
+        end_date,
+        master_id,
+        create_time,
+        update_time,
+        master_name,
+        status,
+        subject
+        FROM clazz
+    </select>
+</mapper>

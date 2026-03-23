@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kaduox.mapper.StudentMapper">
+
+    <resultMap id="studentResultMap" type="com.kaduox.pojo.Student">
+        <id column="id" property="id" />
+        <result column="name" property="name" />
+        <result column="no" property="no" />
+        <result column="gender" property="gender" />
+        <result column="phone" property="phone" />
+        <result column="degree" property="degree" />
+        <result column="id_card" property="idCard" />
+        <result column="is_college" property="isCollege" />
+        <result column="address" property="address" />
+        <result column="violation_score" property="violationScore" />
+        <result column="violation_count" property="violationCount" />
+        <result column="clazz_id" property="clazzId" />
+        <result column="clazz_name" property="clazzName" />
+        <result column="graduation_date" property="graduationDate" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+    </resultMap>
+
+    <!-- 1. 新增：增加 useGeneratedKeys，插入后自动获取自增ID -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        insert into student(name, no, gender, phone, degree, clazz_id, clazz_name,
+                            id_card, is_college, address, graduation_date, create_time, update_time)
+        values(
+        #{name},
+        #{no},
+        #{gender},  <!-- 直接存数字 1 或 2 -->
+        #{phone},
+        #{degree},  <!-- 直接存数字 1-6 -->
+        #{clazzId},
+        (SELECT name FROM clazz WHERE id = #{clazzId}),
+        #{idCard},
+        #{isCollege}, <!-- 直接存数字 1 或 0 -->
+        #{address},
+        #{graduationDate},
+        NOW(),
+        NOW()
+        )
+    </insert>
+
+    <update id="update">
+        update student
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="no != null">no = #{no},</if>
+            <if test="phone != null">phone = #{phone},</if>
+            <if test="address != null">address = #{address},</if>
+            <if test="idCard != null">id_card = #{idCard},</if>
+            <if test="graduationDate != null">graduation_date = #{graduationDate},</if>
+
+            <!-- 直接存数字，不要用 CASE 转换成文字 -->
+            <if test="gender != null">gender = #{gender},</if>
+            <if test="degree != null">degree = #{degree},</if>
+            <if test="isCollege != null">is_college = #{isCollege},</if>
+
+            <if test="clazzId != null">
+                clazz_id = #{clazzId},
+                <!-- 只有这里需要查一次表，因为 clazz_name 是字符串字段 -->
+                clazz_name = (SELECT name FROM clazz WHERE id = #{clazzId}),
+            </if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 3. 违纪处理：基于Student对象累加 -->
+    <update id="handleViolation">
+        update student
+        set
+            violation_score = violation_score + #{violationScore},
+            violation_count = violation_count + #{violationCount},
+            update_time = NOW()
+        where id = #{id}
+    </update>
+
+    <!-- 4. 批量删除：collection必须与接口@Param一致 -->
+    <delete id="deleteByIds">
+        delete from student where id in
+        <foreach collection="ids" item="id"  separator="," open="(" close=")" >
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 5. 列表查询：字段名需匹配 StudentQueryParam 里的属性 -->
+    <select id="list" resultMap="studentResultMap">
+        select * from student
+        <where>
+            <if test="name != null and name != ''">
+                and name like concat('%', #{name}, '%')
+            </if>
+            <if test="no != null and no != ''">
+                and no = #{no}
+            </if>
+            <if test="clazzId != null">
+                and clazz_id = #{clazzId}
+            </if>
+            <!-- 如果有性别筛选等，也可以加在这里 -->
+        </where>
+        order by update_time desc
+    </select>
+
+    <select id="getById" resultMap="studentResultMap">
+        select * from student where id = #{id}
+    </select>
+    <select id="countStudentDegreeData" resultType="java.util.Map">
+        select
+            (case degree when 1 then '本科'
+                         when 2 then '大专'
+                         when 3 then '高中'
+                         when 4 then '初中'
+                         when 5 then '小学'
+                         else '其他' end) as name,
+            count(*) as value
+        from student
+        group by degree
+    </select>
+
+    <select id="countStudentCountData" resultType="java.util.Map">
+        select
+            clazz_id as id,
+            clazz_name as name,
+            count(*) as value
+        from student
+        group by clazz_id, clazz_name
+    </select>
+
+</mapper>
